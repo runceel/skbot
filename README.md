@@ -1,59 +1,60 @@
 # Semantic Kernel Bot in-a-box
 ![Banner](./readme_assets/banner.png)
 
-This project deploys an extensible Semantic Kernel bot template to Azure.
+このプロジェクトでは、拡張可能な Semantic Kernel ボット テンプレートを Azure にデプロイします。
 
-## Solution Architecture
+## ソリューションアーキテクチャ
 
-The solution architecture is described in the diagram below.
+ソリューションのアーキテクチャを次の図に示します。
 
-![Solution Architecture](./readme_assets/architecture.png)
+![ソリューションのアーキテクチャ](./readme_assets/architecture.png)
 
-The flow of messages is as follows:
+メッセージの流れは次のとおりです:
 
-- End-users connect to a messaging channel your bot is publised to, such as Web, a PowerBI dashboard or Teams;
-- Messages get processed through Azure Bot Services, which communicates with a .NET application running on App Services.
-- The .NET application runs a Semantic Kernel Stepwise Planner at its core. The planner elaborates a series of steps to process the user's request, and then executes it.
-- Each step of the plan is formulated through Azure OpenAI, and the executed against Cognitive Search (traditional RAG pattern) or Azure SQL (structured data RAG).
-- Cognitive search contains an index of hotels, while Azure SQL contains customer data from the AdventureWorksLT sample. Azure OpenAI is responsible for deciding which data source each question gets routed to. Questions may also span multiple data sources. Check out the Sample Scenarios section for more details.
+- エンド ユーザーは、ボットが公開されているメッセージング チャネル (Web、PowerBI ダッシュボード、Teams など) に接続します。
+- メッセージは、App Services で実行されている .NET アプリケーションと通信する Azure Bot Services を介して処理されます。
+- NETアプリケーションは、Semantic Kernel ステップワイズプランナーをコアで実行します。プランナーは、ユーザーの要求を処理するための一連の手順を詳しく説明し、それを実行します。
+- 計画の各ステップは Azure OpenAI によって策定され、Cognitive Search (従来の RAG パターン) または Azure SQL (構造化データ RAG) に対して実行されます。
+- Cognitive search にはホテルのインデックスが含まれ、Azure SQL には AdventureWorksLT サンプルの顧客データが含まれます。Azure OpenAI は、各質問のルーティング先のデータ ソースを決定する役割を担います。質問は、複数のデータソースにまたがる場合もあります。詳細については、「サンプル シナリオ」セクションを参照してください。
 
 
-## Pre-requisites
+## 前提条件
 
-- For running locally:
-    - [Install .NET](https://dotnet.microsoft.com/en-us/download);
-    - [Install Bot Framework Emulator](https://github.com/Microsoft/BotFramework-Emulator);
+- ローカルで実行する場合:
+    - [.NET のインストール](https://dotnet.microsoft.com/en-us/download);
+    - [Bot Framework Emulator のインストール](https://github.com/Microsoft/BotFramework-Emulator);
 
-- For deploying to Azure:
-    - Install Azure CLI
-    - Log into your Azure subscription
+- Azure にデプロイする場合:
+    - Azure CLI をインストール
+    - Azure サブスクリプションにログイン
 
     ```
     az login
     ```
 
-## Deploy to Azure
+## Azure へのデプロイ
 
-1. Clone this repository locally: 
+1. このリポジトリをローカルにクローンします。
 
 ```
 git clone https://github.com/Azure/semantic-kernel-bot-in-a-box
 ```
 
-2. Create a new resource group
-3. Create a new Multi-Tenant Application Registration and add a Client Secret
-4. In the `infra` directory, look for the file `main.example.bicepparam`. Rename it to `main.bicepparam` and fill out the app information you just generated at the bottom. In this step, you may also disable the creation of Document Intelligence, Cognitive Search and Azure SQL. Keep in mind disabling these resources will also disable their respective plugins on the application.
-5. Deploy resources: 
+2. 新しいリソース グループを作成する
+3. 新しいマルチテナント アプリケーション登録を作成し、クライアント シークレットを追加する
+4. `infra` ディレクトリで、`main.example.bicepparam` ファイルを探します。名前を `main.bicepparam` に変更し、生成したアプリ情報を下部に入力します。この手順では、Document Intelligence、Cognitive Search、Azure SQL の作成を無効にすることもできます。これらのリソースを無効にすると、アプリケーション上のそれぞれのプラグインも無効になることに注意してください。
+
+5. リソースをデプロイします。
 ```
 cd infra
 az deployment group create --resource-group=YOUR_RG_NAME -f main.bicep --parameters main.bicepparam
 ```
-If this step causes you any errors, try updating your Azure CLI.
+この手順でエラーが発生した場合は、Azure CLI を更新してみてください。
 
-6. Connect Hotels Sample Index on the Azure Cognitive Services instance
-![Cognitive Search Home](./readme_assets/cognitive-search-home.png)
-![Create Cognitive Search Index from Sample](./readme_assets/cognitive-search-index-sample.png)
-7. Deploy bot application to App Services:
+6. Azure Cognitive Services インスタンスの Connect Hotels サンプル インデックス
+![Cognitive Search ホーム](./readme_assets/cognitive-search-home.png)
+![サンプルから Cognitive Search インデックスを作成する](./readme_assets/cognitive-search-index-sample.png)
+7. ボット アプリケーションを App Services にデプロイします:
 ```
 cd src
 rm -r bin obj Archive.zip
@@ -61,82 +62,76 @@ zip -r Archive.zip ./* .deployment
 az webapp deployment source config-zip --resource-group "YOUR_RG_NAME" --name "YOUR_APPSERVICES_NAME" --src "Archive.zip"
 ```
 
-8. Test on Web Chat - go to your Azure Bot resource on the Azure portal and look for the Web Chat feature on the left side menu.
+8. Web チャットでテストする - Azure portal で Azure Bot リソースに移動し、左側のメニューで Web チャット機能を探します。
 
-![Test Web Chat](./readme_assets/webchat-test.png)
+![Webチャットのテスト](./readme_assets/webchat-test.png)
 
 
-## Running Locally (must deploy resources to Azure first)
+## ローカルで実行する (最初にリソースを Azure にデプロイする必要があります)
 
-After running the deployment template, you may also run the application locally for development and debugging.
+デプロイ テンプレートを実行した後、開発とデバッグのためにアプリケーションをローカルで実行することもできます。
 
-- Go to the `src` directory and look for the `appsettings.example.json` file. Rename it to `appsettings.json` and fill out the required service credentials and URLs
-- Execute the project:
+- `src` ディレクトリに移動し、`appsettings.example.json` ファイルを探します。名前を `appsettings.example.json` に変更し、必要なサービスの資格情報と URL を入力します
+- プロジェクトを実行します。
 ```
     dotnet run
 ```
-- Open Bot Framework Emulator and connect to http://localhost:3987/api/messages
-- Don't forget to enable firewall access to any services where it may be restricted. By default, SQL Server will disable public connections.
+- Bot Framework Emulator を開き、http://localhost:3987/api/messages に接続します
+- ファイアウォールが制限されている可能性のあるサービスへのアクセスを有効にすることを忘れないでください。既定では、SQL Server はパブリック接続が無効になっています。
 
-## Sample scenarios
+## サンプルシナリオ
 
-The application has the ability to consume information from GPT-4 itself, Cognitive Search, SQL and documents uploaded by the end user directly. Each of these data sources will be preloaded with some sample data, but you may use the connections as templates to connect your own data sources.
+このアプリケーションには、GPT-4自体、Cognitive Search、SQL、およびエンドユーザーがアップロードしたドキュメントからの情報を直接使用する機能があります。これらの各データ ソースには、いくつかのサンプル データがプリロードされていますが、接続をテンプレートとして使用して、独自のデータ ソースを接続できます。
 
-You may ask about the following topics to test each functionality
+各機能をテストするために、次のトピックについて質問できます
 
-1. General knowledge questions
-    - Ask about any publicly available knowledge;
-![General question scenario](./readme_assets/webchat-general.png)
+1.一般的な知識の質問
+    - 公開されている知識について尋ねる。
+![一般的な質問のシナリオ](./readme_assets/webchat-general.png)
 
-2. Retrieval-augmented generation (SearchPlugin)
-    - Ask to look for hotels matching a description;
-![Retrieval-augmented scenario](./readme_assets/webchat-search.png)
+1. 検索拡張生成(SearchPlugin)
+    - 説明に一致するホテルを探すように依頼します。
+![検索拡張シナリオ](./readme_assets/webchat-search.png)
 
-3. Structured data retrieval (SQLPlugin)
-    - Ask about your customers and sales;
-![SQL connection scenario](./readme_assets/webchat-sql.png)
+1. 構造化データ取得 (SQLPlugin)
+    - 顧客と売上について尋ねる。
+![SQL接続シナリオ](./readme_assets/webchat-sql.png)
 
-4. Upload documents as context (UploadPlugin)
-    - Upload a file and ask questions about it;
-![Upload scenario](./readme_assets/webchat-upload.png)
+1. ドキュメントをコンテキストとしてアップロードする (UploadPlugin)
+    - ファイルをアップロードし、それについて質問します。
+![アップロードシナリオ](./readme_assets/webchat-upload.png)
 
 
-## Debugging intermediate thoughts
+## 中間思考のデバッグ
 
-This project comes with a built-in debug tool that can output the Semantic Kernel Planner's intermediate steps, such as thoughts, actions and observations. You may turn on this feature by switching the DEBUG environment variable to "true".
+このプロジェクトには、Semantic Kernel プランナーの中間ステップ(思考、アクション、観察など)を出力できるデバッグツールが組み込まれています。この機能は、DEBUG 環境変数を "true" に切り替えることで有効にできます。
 
-![Debugging intermidiate thoughts](./readme_assets/webchat-debug.png)
+![中間思考のデバッグ](./readme_assets/webchat-debug.png)
 
-## Developing your own plugins
+## 独自のプラグインを開発する
 
-This project comes with two plugins, which may be found in the Plugins/ directory. You may use these plugins as examples when developing your own plugins.
+このプロジェクトには 2 つのプラグインが付属しており、Plugins/ ディレクトリにあります。これらのプラグインは、独自のプラグインを開発する際の例として使用できます。
 
-To create a custom plugin:
+カスタムプラグインを作成するには:
 
-- Add a new file to the Plugins directory. Use one of the examples as a template.
-- Add your code to the plugin. Each Semantic Function should contain a top-level description, and a description of each argument, so that Semantic Kernel may understand how to leverage that functionality.
-- Load your plugin in the Bots/SKBot.cs file
+- Pluginsディレクトリに新しいファイルを追加します。例の 1 つをテンプレートとして使用します。
+- プラグインにコードを追加します。各セマンティック関数には、最上位の説明と各引数の説明が含まれており、Semantic Kernel がその機能を活用する方法を理解できるようにする必要があります。
+- Bots/SKBot.cs ファイルにプラグインをロードします
 
-And you're done! Redeploy your app and Semantic Kernel will now use your plugin whenever the user's questions call for it.
+これで完了です。アプリを再デプロイすると、Semantic Kernel は、ユーザーの質問でプラグインが必要になるたびにプラグインを使用するようになります。
 
-## Contributing
+## 貢献
 
-This project welcomes contributions and suggestions.  Most contributions require you to agree to a
-Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
-the rights to use your contribution. For details, visit https://cla.opensource.microsoft.com.
+このプロジェクトは、貢献と提案を歓迎します。 ほとんどのコントリビューションでは、コントリビューターライセンス契約(CLA)に同意して、コントリビューションを使用する権利があり、実際に付与することを宣言する必要があります。詳しくは https://cla.opensource.microsoft.com をご覧ください。
 
-When you submit a pull request, a CLA bot will automatically determine whether you need to provide
-a CLA and decorate the PR appropriately (e.g., status check, comment). Simply follow the instructions
-provided by the bot. You will only need to do this once across all repos using our CLA.
+プルリクエストを送信すると、CLAボットはCLAを提供し、PRを適切に装飾する必要があるかどうかを自動的に判断します(ステータスチェック、コメントなど)。ボットの指示に従うだけです。これは、CLA を使用するすべてのリポジトリで 1 回だけ行う必要があります。
 
-This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
-For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
-contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
+このプロジェクトでは、[Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/)を採用しています。
+詳細については、[行動規範に関するFAQ](https://opensource.microsoft.com/codeofconduct/faq/)または
+その他の質問やコメントについては、[opencode@microsoft.com](mailto:opencode@microsoft.com)にお問い合わせください。
 
-## Trademarks
+## 商標について
 
-This project may contain trademarks or logos for projects, products, or services. Authorized use of Microsoft 
-trademarks or logos is subject to and must follow 
-[Microsoft's Trademark & Brand Guidelines](https://www.microsoft.com/en-us/legal/intellectualproperty/trademarks/usage/general).
-Use of Microsoft trademarks or logos in modified versions of this project must not cause confusion or imply Microsoft sponsorship.
-Any use of third-party trademarks or logos are subject to those third-party's policies.
+このプロジェクトには、プロジェクト、製品、またはサービスの商標またはロゴが含まれている場合があります。Microsoft の商標またはロゴの許可された使用は、[Microsoft の商標およびブランド ガイドライン](https://www.microsoft.com/en-us/legal/intellectualproperty/trademarks/usage/general) に従う必要があります。
+このプロジェクトの修正版での Microsoft の商標またはロゴの使用は、混乱を招いたり、Microsoft のスポンサーシップを暗示したりしてはなりません。
+第三者の商標またはロゴの使用は、それらの第三者のポリシーの対象となります。

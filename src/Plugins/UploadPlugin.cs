@@ -28,12 +28,12 @@ public class UploadPlugin
 
 
 
-    [SKFunction, Description("Search for relevant information in the uploaded documents")]
+    [SKFunction, Description("アップロードされたドキュメントで関連情報を検索する")]
     public async Task<string> SearchUploads(
-        [Description("The text to search by similarity")] string query
+        [Description("類似性で検索するテキスト")] string query
     )
     {
-        await _turnContext.SendActivityAsync($"Searching uploaded document for \"{query}\"...");
+        await _turnContext.SendActivityAsync($"アップロードされたドキュメントの検索 \"{query}\"...");
         var embedding = await embeddingClient.GenerateEmbeddingsAsync(new List<string> { query });
         var vector = embedding.First().ToArray();
         var similarities = new List<float>();

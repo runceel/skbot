@@ -21,11 +21,11 @@ namespace Microsoft.BotBuilderSamples
                 // NOTE: In production environment, you should consider logging this to
                 // Azure Application Insights. Visit https://aka.ms/bottelemetry to see how
                 // to add telemetry capture to your bot.
-                logger.LogError(exception, $"[OnTurnError] unhandled error : {exception.Message}");
+                logger.LogError(exception, $"[OnTurnError] ハンドル外のエラー : {exception.Message}");
 
                 // Send a message to the user
-                await turnContext.SendActivityAsync("The bot encountered an error or bug.");
-                await turnContext.SendActivityAsync("To continue to run this bot, please fix the bot source code.");
+                await turnContext.SendActivityAsync("ボットでエラーまたはバグが発生しました。");
+                await turnContext.SendActivityAsync("このボットを引き続き実行するには、ボットのソースコードを修正してください。");
 
                 if (conversationState != null)
                 {
@@ -38,7 +38,7 @@ namespace Microsoft.BotBuilderSamples
                     }
                     catch (Exception e)
                     {
-                        logger.LogError(e, $"Exception caught on attempting to Delete ConversationState : {e.Message}");
+                        logger.LogError(e, $"ConversationState の削除の試行時に例外がキャッチされました : {e.Message}");
                     }
                 }
 

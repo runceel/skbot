@@ -23,31 +23,31 @@ public class SQLPlugin
 
 
 
-    [SKFunction, Description("Obtain the table names in AdventureWorksLT, which contains customer and sales data. Always run this before running other queries instead of assuming the user mentioned the correct name. Remember the salesperson information is contained in the Customer table.")]
+    [SKFunction, Description("顧客データと売上データを含む AdventureWorksLT のテーブル名を取得します。ユーザーが正しい名前を述べたと想定するのではなく、他のクエリを実行する前に必ずこれを実行してください。販売員情報は Customer テーブルに含まれていることを忘れないでください。")]
     public async Task<string> GetTables() {
-        await _turnContext.SendActivityAsync($"Getting tables...");
+        await _turnContext.SendActivityAsync($"テーブルを取得中...");
         return QueryAsCSV($"SELECT TABLE_SCHEMA, TABLE_NAME FROM INFORMATION_SCHEMA.TABLES;");
     }
 
 
 
-    [SKFunction, Description("Obtain the database schema for a table in AdventureWorksLT.")]
+    [SKFunction, Description("AdventureWorksLT のテーブルのデータベース スキーマを取得します。")]
     public async Task<string> GetSchema(
-        [Description("The table to get the schema for. Do not include the schema name.")] string tableName
+        [Description("スキーマを取得するテーブル。スキーマ名は含めないでください。")] string tableName
     ) 
     {
-        await _turnContext.SendActivityAsync($"Getting schema for table \"{tableName}\"...");
+        await _turnContext.SendActivityAsync($"テーブルのスキーマの取得 \"{tableName}\"...");
         return QueryAsCSV($"SELECT TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{tableName}';");
     }
 
 
 
-    [SKFunction, Description("Run SQL against the AdventureWorksLT database")]
+    [SKFunction, Description("AdventureWorksLT データベースに対して SQL を実行する")]
     public async Task<string> RunQuery(
-        [Description("The query to run on SQL Server. When referencing tables, make sure to add the schema names.")] string query
+        [Description("SQL Server で実行するクエリ。テーブルを参照するときは、必ずスキーマ名を追加してください。")] string query
     )
     {
-        await _turnContext.SendActivityAsync($"Running query \"{query}\"...");
+        await _turnContext.SendActivityAsync($"実行中のクエリ \"{query}\"...");
         return QueryAsCSV(query);
     }
 

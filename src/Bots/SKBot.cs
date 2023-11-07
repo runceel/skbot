@@ -85,7 +85,7 @@ namespace Microsoft.BotBuilderSamples
         }
         protected override async Task OnMembersAddedAsync(IList<ChannelAccount> membersAdded, ITurnContext<IConversationUpdateActivity> turnContext, CancellationToken cancellationToken)
         {
-            await turnContext.SendActivityAsync("Welcome to GPTBot Sample. Type anything to get started.");
+            await turnContext.SendActivityAsync("GPTBot サンプルへようこそ。開始するには、何か入力してください。");
         }
 
         public override async Task<string> ProcessMessage(ConversationData conversationData, ITurnContext<IMessageActivity> turnContext)
@@ -96,7 +96,7 @@ namespace Microsoft.BotBuilderSamples
                 if (!_config.GetValue<string>("DOCINTEL_API_ENDPOINT").IsNullOrEmpty())
                     return await HandleFileUpload(conversationData, turnContext);
                 else
-                    return "Document upload not supported as no Document Intelligence endpoint was provided";
+                    return "Document Intelligence エンドポイントが提供されなかったため、ドキュメントのアップロードはサポートされていません";
             }
 
             kernel = GetKernel(conversationData, turnContext);
