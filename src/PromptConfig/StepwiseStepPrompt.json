@@ -28,22 +28,18 @@ $JSON_BLOB に1つのアクションのみが含まれていることを確認�
 
 [VALID STEP LIST]
 [QUESTION] - 私が答えなければならない入力の質問
-[THOUGHT] - 質問とそれに答える方法について私が考えていること。
+[THOUGHT] - 質問とそれに答える方法について私が思考していること。
 [ACTION] - 実行する 1 つのアクションを表す 1 つの $JSON_BLOB
 [OBSERVATION] - アクションの結果はここに表示されます
-[FINAL ANSWER] - 思考と行動を生み出すことで必要なすべての観察を集めたら、最終的な答えを明確で人間が読める形式で提供できます。
+[FINAL ANSWER] - 思考とアクションを生み出すことで必要なすべての観察を集めたら、最終的な答えを明確で人間が読める形式で提供できます。
 [END VALID STEP LIST]
 
-Every Question should be followed by a Thought.
-Every Thought should be followed by an Action or Final Answer.
-Every Action should be followed by an Observation.
-Every Observation should be followed by a Thought or Final Answer.
-Produce Thoughts and Actions as necessary until you have a Final Answer.
+
 すべての質問の後には、思考が続くべきです。
 すべての思考の後には、アクションまたは最終的な答えが続く必要があります。
 すべてのアクションの後には、観察が続く必要があります。
 すべての観察の後には、思考または最終回答が続く必要があります。
-最終的な答えが得られるまで、必要に応じて思考と行動を作成します。
+最終的な答えが得られるまで、必要に応じて思考とアクションを作成します。
 
 
 {{$suffix}}

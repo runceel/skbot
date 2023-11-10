@@ -81,6 +81,7 @@ namespace Microsoft.BotBuilderSamples
             if (!_config.GetValue<string>("DOCINTEL_API_ENDPOINT").IsNullOrEmpty()) kernel.ImportFunctions(new UploadPlugin(_config, conversationData, turnContext), "UploadPlugin");
             if (!_config.GetValue<string>("SQL_CONNECTION_STRING").IsNullOrEmpty()) kernel.ImportFunctions(new SQLPlugin(_config, conversationData, turnContext), "SQLPlugin");
             if (!_config.GetValue<string>("SEARCH_API_ENDPOINT").IsNullOrEmpty()) kernel.ImportFunctions(new SearchPlugin(_config, conversationData, turnContext), "SearchPlugin");
+            if (!_config.GetValue<string>("BING_SEARCH_API_KEY").IsNullOrEmpty()) kernel.ImportFunctions(new BingSearchPlugin(_config, conversationData, turnContext), "BingSearchPlugin");
             return kernel;
         }
         protected override async Task OnMembersAddedAsync(IList<ChannelAccount> membersAdded, ITurnContext<IConversationUpdateActivity> turnContext, CancellationToken cancellationToken)
