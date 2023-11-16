@@ -23,7 +23,8 @@ namespace Microsoft.BotBuilderSamples
                     {
                         config.AddJsonFile("appsettings.json",
                             optional: true,
-                            reloadOnChange: true).AddEnvironmentVariables();
+                            reloadOnChange: true).AddEnvironmentVariables()
+                            .AddUserSecrets<Program>();
                     });
                     webBuilder.ConfigureLogging((logging) =>
                     {

@@ -12,6 +12,7 @@ using Microsoft.Bot.Builder.Integration.AspNet.Core;
 using Microsoft.Bot.Connector.Authentication;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using SKBot.AI;
 
 namespace Microsoft.BotBuilderSamples
 {
@@ -70,6 +71,8 @@ namespace Microsoft.BotBuilderSamples
 
             // Create the bot as a transient. In this case the ASP Controller is expecting an IBot.
             services.AddTransient<IBot, SKBot>();
+
+            services.AddSingleton<IAIAssistant, AIAssistant>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

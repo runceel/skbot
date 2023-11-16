@@ -13,7 +13,7 @@ namespace Plugins;
 
 public class UploadPlugin
 {
-    private readonly AzureTextEmbeddingGeneration embeddingClient;
+    private readonly AzureOpenAITextEmbeddingGeneration embeddingClient;
     private ConversationData _conversationData;
     private ITurnContext<IMessageActivity> _turnContext;
 
@@ -21,7 +21,7 @@ public class UploadPlugin
     {
         var _aoaiApiKey = config.GetValue<string>("AOAI_API_KEY");
         var _aoaiApiEndpoint = config.GetValue<string>("AOAI_API_ENDPOINT");
-        embeddingClient = new AzureTextEmbeddingGeneration(modelId: "text-embedding-ada-002", _aoaiApiEndpoint, _aoaiApiKey);
+        embeddingClient = new AzureOpenAITextEmbeddingGeneration(modelId: "text-embedding-ada-002", _aoaiApiEndpoint, _aoaiApiKey);
         _conversationData = conversationData;
         _turnContext = turnContext;
     }

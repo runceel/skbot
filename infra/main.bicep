@@ -22,7 +22,7 @@ var sqlDBName = '${prefix}-db-${uniqueSuffix}'
 module m_openai 'modules/openai.bicep' = {
   name: 'deploy_openai'
   params: {
-    resourceLocation: resourceLocation
+    resourceLocation: 'canadaeast'
     prefix: prefix
     tags: tags
   }

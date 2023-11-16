@@ -18,72 +18,34 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Connectors.AI.OpenAI.TextEmbedding;
 using Microsoft.SemanticKernel.Planners;
+using Microsoft.SemanticKernel.Plugins.Core;
+using Microsoft.SemanticKernel.Plugins.Web;
+using Microsoft.SemanticKernel.Plugins.Web.Bing;
 using Model;
 using Newtonsoft.Json;
 using Plugins;
+using SKBot.AI;
+using SKBot.Plugins;
 
 namespace Microsoft.BotBuilderSamples
 {
     public class SKBot : StateManagementBot
     {
-        private IKernel kernel;
-        private string _aoaiApiKey;
-        private string _aoaiApiEndpoint;
-        private string _aoaiModel;
-        private string _docIntelApiKey;
-        private string _docIntelApiEndpoint;
-        private StepwisePlanner _planner;
-        private ILoggerFactory loggerFactory;
-        private ILoggerProvider loggerProvider;
-        private bool _debug;
-        private IConfiguration _config;
-        private readonly AzureTextEmbeddingGeneration embeddingClient;
-        private readonly DocumentAnalysisClient documentAnalysisClient;
+        private readonly AzureOpenAITextEmbeddingGeneration _embeddingClient;
+        private readonly DocumentAnalysisClient _documentAnalysisClient;
+        private readonly IAIAssistant _aiAssistant;
 
-        public SKBot(IConfiguration config, ConversationState conversationState, UserState userState) : base(config, conversationState, userState)
+        public SKBot(IAIAssistant aiAssistant, 
+            IConfiguration config,
+            ConversationState conversationState, 
+            UserState userState) : base(config, conversationState, userState)
         {
-            _aoaiApiKey = config.GetValue<string>("AOAI_API_KEY");
-            _aoaiApiEndpoint = config.GetValue<string>("AOAI_API_ENDPOINT");
-            _aoaiModel = config.GetValue<string>("AOAI_MODEL");
-
-            embeddingClient = new AzureTextEmbeddingGeneration(modelId: "text-embedding-ada-002", _aoaiApiEndpoint, _aoaiApiKey);
-
-            _docIntelApiKey = config.GetValue<string>("DOCINTEL_API_KEY");
-            _docIntelApiEndpoint = config.GetValue<string>("DOCINTEL_API_ENDPOINT");
-
-            if (!_docIntelApiEndpoint.IsNullOrEmpty()) documentAnalysisClient = new DocumentAnalysisClient(new Uri(_docIntelApiEndpoint), new AzureKeyCredential(_docIntelApiKey));
-
-            _debug = config.GetValue<bool>("DEBUG");
-            _config = config;
+            var aoaiApiKey = config.GetValue<string>("AOAI_API_KEY");
+            var aoaiApiEndpoint = config.GetValue<string>("AOAI_API_ENDPOINT");
+            _embeddingClient = new AzureOpenAITextEmbeddingGeneration(modelId: "text-embedding-ada-002", aoaiApiEndpoint, aoaiApiKey);
+            _aiAssistant = aiAssistant;
         }
 
-        private IKernel GetKernel(ConversationData conversationData, ITurnContext<IMessageActivity> turnContext) {
-           
-            loggerProvider = new ThoughtLoggerProvider(_debug, turnContext);
-            loggerFactory = LoggerFactory.Create(builder =>
-            {
-                builder
-                    .SetMinimumLevel(LogLevel.Information)
-                    .AddProvider(loggerProvider)
-                    .AddConsole()
-                    .AddDebug();
-            });
-            
-            kernel = new KernelBuilder()
-                    .WithAzureChatCompletionService(
-                        deploymentName: _aoaiModel,
-                        endpoint: _aoaiApiEndpoint,
-                        apiKey: _aoaiApiKey
-                    )
-                    .WithLoggerFactory(loggerFactory)
-                    .Build();
-
-            if (!_config.GetValue<string>("DOCINTEL_API_ENDPOINT").IsNullOrEmpty()) kernel.ImportFunctions(new UploadPlugin(_config, conversationData, turnContext), "UploadPlugin");
-            if (!_config.GetValue<string>("SQL_CONNECTION_STRING").IsNullOrEmpty()) kernel.ImportFunctions(new SQLPlugin(_config, conversationData, turnContext), "SQLPlugin");
-            if (!_config.GetValue<string>("SEARCH_API_ENDPOINT").IsNullOrEmpty()) kernel.ImportFunctions(new SearchPlugin(_config, conversationData, turnContext), "SearchPlugin");
-            if (!_config.GetValue<string>("BING_SEARCH_API_KEY").IsNullOrEmpty()) kernel.ImportFunctions(new BingSearchPlugin(_config, conversationData, turnContext), "BingSearchPlugin");
-            return kernel;
-        }
         protected override async Task OnMembersAddedAsync(IList<ChannelAccount> membersAdded, ITurnContext<IConversationUpdateActivity> turnContext, CancellationToken cancellationToken)
         {
             await turnContext.SendActivityAsync("GPTBot サンプルへようこそ。開始するには、何か入力してください。");
@@ -91,36 +53,17 @@ namespace Microsoft.BotBuilderSamples
 
         public override async Task<string> ProcessMessage(ConversationData conversationData, ITurnContext<IMessageActivity> turnContext)
         {
-            // Handle file uploads
-            if (turnContext.Activity.Attachments?.Count > 0)
+            var loggerFactory = LoggerFactory.Create(builder =>
             {
-                if (!_config.GetValue<string>("DOCINTEL_API_ENDPOINT").IsNullOrEmpty())
-                    return await HandleFileUpload(conversationData, turnContext);
-                else
-                    return "Document Intelligence エンドポイントが提供されなかったため、ドキュメントのアップロードはサポートされていません";
-            }
-
-            kernel = GetKernel(conversationData, turnContext);
-
-            var stepwiseConfig = new StepwisePlannerConfig
-            {
-                GetPromptTemplate = new StreamReader("./PromptConfig/StepwiseStepPrompt.json").ReadToEnd,
-                MaxIterations = 15
-            };
-            _planner = new StepwisePlanner(kernel, stepwiseConfig);
-            string prompt = FormatConversationHistory(conversationData);
-            var plan = _planner.CreatePlan(prompt);
-
-            var res = await kernel.RunAsync(plan);
-
-            var stepsTaken = JsonConvert.DeserializeObject<Step[]>(res.FunctionResults.First().Metadata["stepsTaken"].ToString());
-
-            return stepsTaken[stepsTaken.Length - 1].final_answer;
+                builder.AddProvider(new ThoughtLoggerProvider(true, turnContext));
+            });
+            var prompt = FormatConversationHistory(conversationData);
+            return await _aiAssistant.AskAsync(prompt, loggerFactory);
         }
 
         private async Task<string> HandleFileUpload(ConversationData conversationData, ITurnContext<IMessageActivity> turnContext)
         {
-            Uri fileUri = new Uri(turnContext.Activity.Attachments.First().ContentUrl);
+            Uri fileUri = new Uri(turnContext.Activity.Attachments.First(x => x.ContentUrl != null).ContentUrl);
 
             var httpClient = new HttpClient();
             var stream = await httpClient.GetStreamAsync(fileUri);
@@ -129,7 +72,7 @@ namespace Microsoft.BotBuilderSamples
             stream.CopyTo(ms);
             ms.Position = 0;
 
-            var operation = await documentAnalysisClient.AnalyzeDocumentAsync(WaitUntil.Completed, "prebuilt-layout", ms);
+            var operation = await _documentAnalysisClient.AnalyzeDocumentAsync(WaitUntil.Completed, "prebuilt-layout", ms);
             
             ms.Dispose();
 
@@ -146,7 +89,7 @@ namespace Microsoft.BotBuilderSamples
                     attachmentPage.Content += $"{line.Content}\n";
                 }
                 // Embed content
-                var embedding = await embeddingClient.GenerateEmbeddingsAsync(new List<string> { attachmentPage.Content });
+                var embedding = await _embeddingClient.GenerateEmbeddingsAsync(new List<string> { attachmentPage.Content });
                 attachmentPage.Vector = embedding.First().ToArray();
                 attachment.Pages.Add(attachmentPage);
             }

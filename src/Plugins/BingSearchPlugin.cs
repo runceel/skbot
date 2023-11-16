@@ -6,9 +6,6 @@ using System.Net.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.SemanticKernel;
 using System.Linq;
-using Microsoft.BotBuilderSamples;
-using Microsoft.Bot.Builder;
-using Microsoft.Bot.Schema;
 using Newtonsoft.Json;
 
 namespace Plugins;
@@ -16,14 +13,12 @@ namespace Plugins;
 public class BingSearchPlugin
 {
     private readonly HttpClient _client;
-    private readonly ITurnContext<IMessageActivity> _turnContext;
 
-    public BingSearchPlugin(IConfiguration config, ConversationData conversationData, ITurnContext<IMessageActivity> turnContext)
+    public BingSearchPlugin(IConfiguration config)
     {
         var bingSearchApiKey = config.GetValue<string>("BING_SEARCH_API_KEY");
         _client = new HttpClient();
         _client.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", bingSearchApiKey);
-        _turnContext = turnContext;
     }
 
     [SKFunction, Description("Bingでインターネット上の情報を検索します。")]
@@ -38,7 +33,7 @@ public class BingSearchPlugin
             // JSONを解析して必要な情報を取り出す
             var searchResult = JsonConvert.DeserializeObject<BingSearchResult>(content);
             // 必要な情報を文字列に変換して返す
-            return string.Join(", ", searchResult.WebPages.Value.Select(page => page.Name));
+            return string.Join(", ", searchResult?.WebPages?.Value?.Select(page => page.Snippet) ?? []);
         }
         else
         {
@@ -49,15 +44,16 @@ public class BingSearchPlugin
 
 public class BingSearchResult
 {
-    public WebPages WebPages { get; set; }
+    public WebPages? WebPages { get; set; }
 }
 
 public class WebPages
 {
-    public List<Value> Value { get; set; }
+    public List<Value>? Value { get; set; }
 }
 
 public class Value
 {
-    public string Name { get; set; }
+    public string? Name { get; set; }
+    public string? Snippet { get; set; }
 }

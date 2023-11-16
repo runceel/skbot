@@ -13,11 +13,9 @@ namespace Plugins;
 public class SQLPlugin
 {
     private readonly string connectionString;
-    private ITurnContext<IMessageActivity> _turnContext;
-    public SQLPlugin(IConfiguration config, ConversationData conversationData, ITurnContext<IMessageActivity> turnContext) 
+    public SQLPlugin(IConfiguration config) 
     {
         connectionString = config.GetValue<string>("SQL_CONNECTION_STRING");
-        _turnContext = turnContext;
     }
 
 
@@ -25,7 +23,6 @@ public class SQLPlugin
 
     [SKFunction, Description("顧客データと売上データを含む AdventureWorksLT のテーブル名を取得します。ユーザーが正しい名前を述べたと想定するのではなく、他のクエリを実行する前に必ずこれを実行してください。販売員情報は Customer テーブルに含まれていることを忘れないでください。")]
     public async Task<string> GetTables() {
-        await _turnContext.SendActivityAsync($"テーブルを取得中...");
         return QueryAsCSV($"SELECT TABLE_SCHEMA, TABLE_NAME FROM INFORMATION_SCHEMA.TABLES;");
     }
 
@@ -36,7 +33,6 @@ public class SQLPlugin
         [Description("スキーマを取得するテーブル。スキーマ名は含めないでください。")] string tableName
     ) 
     {
-        await _turnContext.SendActivityAsync($"テーブルのスキーマの取得 \"{tableName}\"...");
         return QueryAsCSV($"SELECT TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{tableName}';");
     }
 
@@ -47,7 +43,6 @@ public class SQLPlugin
         [Description("SQL Server で実行するクエリ。テーブルを参照するときは、必ずスキーマ名を追加してください。")] string query
     )
     {
-        await _turnContext.SendActivityAsync($"実行中のクエリ \"{query}\"...");
         return QueryAsCSV(query);
     }
 
