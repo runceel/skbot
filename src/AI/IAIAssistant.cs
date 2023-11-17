@@ -1,22 +1,10 @@
-﻿using Microsoft.Bot.Builder;
-using Microsoft.Bot.Schema;
-using Microsoft.BotBuilderSamples;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Http.Logging;
-using Microsoft.Extensions.Logging;
-using Microsoft.IdentityModel.Tokens;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.Planners;
 using Microsoft.SemanticKernel.Plugins.Core;
-using Microsoft.SemanticKernel.Services;
-using Model;
-using Newtonsoft.Json;
 using Plugins;
 using SKBot.Plugins;
 using System;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 
