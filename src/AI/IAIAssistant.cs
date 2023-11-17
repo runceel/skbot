@@ -2,6 +2,7 @@
 using Microsoft.Bot.Schema;
 using Microsoft.BotBuilderSamples;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Http.Logging;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.SemanticKernel;
@@ -16,13 +17,14 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace SKBot.AI;
 
 public interface IAIAssistant
 {
-    Task<string> AskAsync(string goal, ILoggerFactory? loggerFactory = null);
+    Task<string> AskAsync(string goal, Func<string, Task> eventCallback);
 }
 
 public class AIAssistant : IAIAssistant
@@ -32,28 +34,28 @@ public class AIAssistant : IAIAssistant
     private readonly string _aoaiApiEndpoint;
     private readonly string _aoaiModel;
     private readonly IConfiguration _configuration;
+    private readonly IHttpClientFactory _httpClientFactory;
 
-    public AIAssistant(IConfiguration configuration)
+    public AIAssistant(IConfiguration configuration, IHttpClientFactory httpClientFactory)
     {
         _configuration = configuration;
-        _isDebug = _configuration.GetValue<bool>("DEBUG");
-        _aoaiApiKey = _configuration.GetValue<string>("AOAI_API_KEY");
-        _aoaiApiEndpoint = _configuration.GetValue<string>("AOAI_API_ENDPOINT");
-        _aoaiModel = _configuration.GetValue<string>("AOAI_MODEL");
+        _httpClientFactory = httpClientFactory;
+        _aoaiApiKey = _configuration.GetValue<string>("AOAI_API_KEY") ?? throw new ArgumentNullException("configuration.AOAI_API_KEY");
+        _aoaiApiEndpoint = _configuration.GetValue<string>("AOAI_API_ENDPOINT") ?? throw new ArgumentNullException("configuration.AOAI_API_ENDPOINT");
+        _aoaiModel = _configuration.GetValue<string>("AOAI_MODEL") ?? throw new ArgumentNullException("configuration.AOAI_MODEL");
     }
 
-    private IStepwisePlanner CreatePlanner(IKernel kernel)
+    private FunctionCallingStepwisePlanner CreatePlanner(IKernel kernel)
     {
-        var stepwiseConfig = new StepwisePlannerConfig
+        var stepwiseConfig = new FunctionCallingStepwisePlannerConfig
         {
-            GetPromptTemplate = new StreamReader("./PromptConfig/StepwiseStepPrompt.json").ReadToEnd,
-            MaxIterations = 15
+            MaxIterations = 15,
+            MaxTokens = 7000,
         };
-
-        return new StepwisePlanner(kernel, stepwiseConfig);
+        return new FunctionCallingStepwisePlanner(kernel, stepwiseConfig);
     }
 
-    private IKernel CreateKernel(ILoggerFactory? loggerFactory = null)
+    private IKernel CreateKernel(Func<string, Task> eventCallback)
     {
         var builder = new KernelBuilder()
             .WithAzureOpenAIChatCompletionService(
@@ -61,28 +63,20 @@ public class AIAssistant : IAIAssistant
                 endpoint: _aoaiApiEndpoint,
                 apiKey: _aoaiApiKey
             );
-        if (loggerFactory is not null)
-        {
-            builder.WithLoggerFactory(loggerFactory);
-        }
 
         var kernel = builder.Build();
-        kernel.ImportFunctions(new TimePlugin(), "TimePlugin");
-        kernel.ImportFunctions(new LocationInfoPlugin(), nameof(LocationInfoPlugin));
-        if (!_configuration.GetValue<string>("SQL_CONNECTION_STRING").IsNullOrEmpty()) 
-            kernel.ImportFunctions(new SQLPlugin(_configuration), "SQLPlugin");
-        if (!_configuration.GetValue<string>("BING_SEARCH_API_KEY").IsNullOrEmpty()) 
-            kernel.ImportFunctions(new BingSearchPlugin(_configuration), nameof(BingSearchPlugin));
-
+        kernel.ImportFunctions(new TimePlugin(), nameof(TimePlugin));
+        kernel.ImportFunctions(new LocationInfoPlugin(eventCallback), nameof(LocationInfoPlugin));
+        kernel.ImportFunctions(new SQLPlugin(_configuration, eventCallback), nameof(SQLPlugin));
+        kernel.ImportFunctions(new BingSearchPlugin(_configuration, _httpClientFactory, eventCallback), nameof(BingSearchPlugin));
         return kernel;
     }
 
-    public async Task<string> AskAsync(string goal, ILoggerFactory loggerFactory)
+    public async Task<string> AskAsync(string goal, Func<string, Task> eventCallback)
     {
-        var kernel = CreateKernel(loggerFactory);
+        var kernel = CreateKernel(eventCallback);
         var planner = CreatePlanner(kernel);
-        var plan = planner.CreatePlan(goal);
-        var res = await kernel.RunAsync(plan);
-        return res.GetValue<string>() ?? "";
+        var res = await planner.ExecuteAsync(goal);
+        return res.FinalAnswer;
     }
 }

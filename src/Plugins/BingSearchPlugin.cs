@@ -13,20 +13,25 @@ namespace Plugins;
 public class BingSearchPlugin
 {
     private readonly HttpClient _client;
+    private readonly string _bingSearchApiKey;
+    private readonly Func<string, Task> _eventCallback;
 
-    public BingSearchPlugin(IConfiguration config)
+    public BingSearchPlugin(IConfiguration config, IHttpClientFactory httpClientFactory, Func<string, Task> eventCallback)
     {
-        var bingSearchApiKey = config.GetValue<string>("BING_SEARCH_API_KEY");
-        _client = new HttpClient();
-        _client.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", bingSearchApiKey);
+        _bingSearchApiKey = config.GetValue<string>("BING_SEARCH_API_KEY")!;
+        _client = httpClientFactory.CreateClient();
+        _eventCallback = eventCallback;
     }
 
     [SKFunction, Description("Bingでインターネット上の情報を検索します。")]
     public async Task<string> BingSearch([Description("検索に使用するクエリ")] string query)
     {
         string url = $"https://api.bing.microsoft.com/v7.0/search?q={Uri.EscapeDataString(query)}";
+        await _eventCallback.Invoke($"{query} について Bing でインターネット上の情報を検索しています。");
 
-        var response = await _client.GetAsync(url);
+        var requestMessage = new HttpRequestMessage(HttpMethod.Get, url);
+        requestMessage.Headers.Add("Ocp-Apim-Subscription-Key", _bingSearchApiKey);
+        var response = await _client.SendAsync(requestMessage);
         if (response.IsSuccessStatusCode)
         {
             var content = await response.Content.ReadAsStringAsync();
