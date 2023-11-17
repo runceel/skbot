@@ -21,17 +21,12 @@ public class SQLPlugin
         _eventCallback = eventCallback;
     }
 
-
-
-
     [SKFunction, Description("顧客データと売上データを含む AdventureWorksLT のテーブル名を取得します。ユーザーが正しい名前を述べたと想定するのではなく、他のクエリを実行する前に必ずこれを実行してください。販売員情報は Customer テーブルに含まれていることを忘れないでください。")]
     public async Task<string> GetTables()
     {
         await _eventCallback($"AdventureWorksLT のテーブル名の取得をしています。");
         return await QueryAsCSV($"SELECT TABLE_SCHEMA, TABLE_NAME FROM INFORMATION_SCHEMA.TABLES;");
     }
-
-
 
     [SKFunction, Description("AdventureWorksLT のテーブルのデータベース スキーマを取得します。")]
     public async Task<string> GetSchema(
@@ -42,8 +37,6 @@ public class SQLPlugin
         return await QueryAsCSV($"SELECT TABLE_SCHEMA, TABLE_NAME, COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '{tableName}';");
     }
 
-
-
     [SKFunction, Description("AdventureWorksLT データベースに対して SQL を実行する")]
     public async Task<string> RunQuery(
         [Description("SQL Server で実行するクエリ。テーブルを参照するときは、必ずスキーマ名を追加してください。")] string query
@@ -52,9 +45,6 @@ public class SQLPlugin
         await _eventCallback($"AdventureWorksLT の {query} を実行しています。");
         return await QueryAsCSV(query);
     }
-
-
-
 
     private async Task<string> QueryAsCSV(string query)
     {
@@ -91,5 +81,4 @@ public class SQLPlugin
 
         return output;
     }
-
 }
